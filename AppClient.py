@@ -1,11 +1,12 @@
 from socket import *
-import re
+import re                  # for regex
 import threading
-import time
+import time                # used to add slight delay after functions (to improve flow)
+
 # Global Variables
-handle = None
-connected = False
-clientSocket = None
+handle = None              # stores the handle/alias
+connected = False          # checks whether Client is connected to Server
+clientSocket = None        # refers to the socket that connects the Client to the Server
 
 # List of commands
 commands = ["/join", "/leave", "/register", "/store", "/dir", "/get", "/?"]
@@ -24,15 +25,18 @@ def intro():
     print("Input '/?' to display list of commands.")
     print("------------------------------------")
 
-# Prompt User to enter a command
+# Prompt Client to enter a command
 def userInput():
+    # If Client is not yet registered
     if not handle:
         return input("\n<Unregisted>: ")
+    # If registered
     else:
         return input("\n"+handle+": ")
 
 # Error: Due to command syntax
 def doesCommandExist(inputCommand):
+    # Goes through every possible string of /<command> to check
     for command in commands:
         if inputCommand == command:
             return True
@@ -44,9 +48,10 @@ def doesParamMatch(inputSyntax):
     # Skip if command does not have parameters
     if inputSyntax in ["/leave", "/dir", "/?"]:
         return True
-    # If there are, check if it follows expected pattern
+    # If there are, check if it follows expected pattern (like /register <handle>)
     else:
         for command in paramCommands:
+            # Uses regex to check if pattern exists
             match = re.match(command, inputSyntax)
             if match:
                 return True
@@ -86,11 +91,12 @@ def displayCommands():
 
 # /join <server_ip_add> <port>: Connect to the server application
 def joinServer(inputs):
+    # Global to ensure they retain/update overall value
     global clientSocket
     global connected
 
     # Get the server IP and port number
-    serverName = inputs[1]
+    serverName = inputs[1]  
     serverPort = int(inputs[2])
     clientSocket = socket(AF_INET, SOCK_STREAM)
     
@@ -98,6 +104,7 @@ def joinServer(inputs):
     try:
         clientSocket.connect((serverName, serverPort))
         connected = True
+        # Uses threading to allow for concurrent functions
         threading.Thread(target=receiveMessage, args=(clientSocket,), daemon=True).start()
         time.sleep(1)
     
@@ -107,25 +114,58 @@ def joinServer(inputs):
 
 # /leave: Disconnect to the server application
 def leaveServer():
+    # Global to ensure they retain/update overall value
     global connected
     global handle
+    global clientSocket
+
     try:
+        # Send "/leave" to Server
         clientSocket.send("/leave".encode())
+        # Prints the response of the Server
         print(clientSocket.recv(1024).decode())
         time.sleep(1)
+        # Closes the socket connecting Client to Server
         clientSocket.close()
+        # Resets the connected and handle status
         connected = False
         handle = None
     except Exception:
         print("Error: Disconnection failed. Please connect to the server first.")
 
+# /register <handle>: Register a unique handle or alias
+def register(newHandle):
+    # Global to ensure they retain/update overall value
+    global handle
+
+    try:
+        # Send "/register" to Server
+        clientSocket.send("/register".encode())
+        # Send the handle/alias input to Server
+        clientSocket.send(newHandle.encode())
+
+        # Receive confirmation if the handle exists or not
+        handleExists = clientSocket.recv(1024).decode()
+        time.sleep(1)
+
+        # Sets handle if allowed
+        if handleExists == "False":
+            handle = newHandle
+
+        # Prints Server's comment on the registration
+        print(clientSocket.recv(1024).decode())
+        
+    except Exception:
+        print("Error: Registration failed.")
+
 # Receiving messages 
 def receiveMessage(clientSocket):
     try:
+        # Takes the response from the Server
         data = clientSocket.recv(1024)
         print(data.decode())
     except Exception as e:
-        print(f"Error receiving message: {e}")
+        print(f"Error: {e}")
 
 # Main
 def main():
@@ -141,6 +181,7 @@ def main():
         # Contains the splitted command
         inputs = inputSyntax.split(' ')
 
+        # Checks first if the syntax is valid, then leads to the functions
         if doesCommandExist(inputs[0]) and doesParamMatch(inputSyntax):
             if inputSyntax == "/?":
                 displayCommands()
@@ -153,6 +194,14 @@ def main():
                     
             elif inputSyntax == "/leave":
                 leaveServer()
+
+            elif inputs[0] == "/register":
+                if connected and not handle:
+                    register(inputs[1])
+                elif connected and handle:
+                    print("Error: User is already registered.")  
+                else:
+                    print("Error: User must be connected to the server.")                    
 
 # Executable
 main()

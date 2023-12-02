@@ -5,7 +5,7 @@ import threading
 serverPort = 12345
 
 # Stores existing handle/alias
-handles = {}
+clients = {}
 
 # Preparing the Server Socket
 serverSocket = socket(AF_INET,SOCK_STREAM)
@@ -27,6 +27,20 @@ def manageClient(connectionSocket, addr):
             # If the Client leaves      
             if command == "/leave":
                 connectionSocket.send("Connection closed. Thank you!".encode())
+                break
+
+            # If the Client registers (must be unique and new)
+            elif command == "/register":
+                handle = connectionSocket.recv(1024).decode()
+                connectionSocket.send(str(handle in clients).encode())
+
+                if handle not in clients:
+                    clients[handle] = {'socket': connectionSocket, 'address': addr}
+                    connectionSocket.send(("Welcome "+handle+"!").encode())
+                    print("Device from port number " + str(addr[1]) + " registered as "+handle+".\n")
+                else:
+                    connectionSocket.send("Error: Registration failed. Handle or alias already exists.".encode())
+                    print("Device from port number " + str(addr[1]) + " failed to register as the handle or alias already exists.\n")
 
     except Exception as e:
         print(f"Error: {e}")
@@ -37,7 +51,9 @@ def manageClient(connectionSocket, addr):
 
 while True:
     # Establishing the connection
-    print('The server is ready to receive.')
+    print('The server is ready to receive.\n')
     connectionSocket, addr = serverSocket.accept()
-    threading.Thread(target=manageClient, args=(connectionSocket, addr)).start()
+    thread = threading.Thread(target=manageClient, args=(connectionSocket, addr))
+    thread.start()
+    thread.join()
 
