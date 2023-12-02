@@ -1,10 +1,11 @@
 from socket import *
 import re
 import threading
-
+import time
 # Global Variables
 handle = None
 connected = False
+clientSocket = None
 
 # List of commands
 commands = ["/join", "/leave", "/register", "/store", "/dir", "/get", "/?"]
@@ -52,10 +53,6 @@ def doesParamMatch(inputSyntax):
     print("Error: Commmand paramters do not match or is not allowed.")
     return False
 
-# Checks if there are any syntax/parameter error:
-def isInputValid(inputSyntax, inputCommand):
-    return doesCommandExist(inputCommand) and doesParamMatch(inputSyntax)
-
 # /?: Request command help to output all Input Syntax commands for references
 def displayCommands():
     print("\n------------------------------------")
@@ -87,11 +84,46 @@ def displayCommands():
     print("Syntax: /?")
     print("------------------------------------")
 
+# /join <server_ip_add> <port>: Connect to the server application
+def joinServer(inputs):
+    global clientSocket
+    global connected
+
+    # Get the server IP and port number
+    serverName = inputs[1]
+    serverPort = int(inputs[2])
+    clientSocket = socket(AF_INET, SOCK_STREAM)
+    
+    # Connect to the server application
+    try:
+        clientSocket.connect((serverName, serverPort))
+        connected = True
+        threading.Thread(target=receiveMessage, args=(clientSocket,), daemon=True).start()
+        time.sleep(1)
+    
+    # Message upon unsuccessful connection to the server due to the server not running or incorrect IP and Port combination
+    except Exception:
+        print("Error: Connection to the Server has failed! Please check IP Address and Port Number.")
+
+# /leave: Disconnect to the server application
+def leaveServer():
+    global connected
+    global handle
+    try:
+        clientSocket.send("/leave".encode())
+        print(clientSocket.recv(1024).decode())
+        time.sleep(1)
+        clientSocket.close()
+        connected = False
+        handle = None
+    except Exception:
+        print("Error: Disconnection failed. Please connect to the server first.")
+
 # Receiving messages 
 def receiveMessage(clientSocket):
     try:
         data = clientSocket.recv(1024)
-        print("Server:", data.decode())
+        print(data.decode())
     except Exception as e:
         print(f"Error receiving message: {e}")
 
@@ -100,6 +132,7 @@ def main():
     # Set following variables as global
     global handle
     global connected
+    global clientSocket
     intro()
 
     while True:
@@ -108,52 +141,18 @@ def main():
         # Contains the splitted command
         inputs = inputSyntax.split(' ')
 
-        if isInputValid(inputSyntax, inputs[0]):
-            # Get List of Commands
+        if doesCommandExist(inputs[0]) and doesParamMatch(inputSyntax):
             if inputSyntax == "/?":
                 displayCommands()
 
-            # Get Server Address and Port Number
             elif inputs[0] == "/join":
-
                 if connected:
                     print("Error: User is already connected to the server.")
                 else:
-                    serverName = inputs[1]
-                    serverPort = int(inputs[2])
-                    clientSocket = socket(AF_INET, SOCK_STREAM)
+                    joinServer(inputs)
                     
-                    # Connect to the server application
-                    try:
-                        clientSocket.connect((serverName, serverPort))
-                        connected = True
-
-                        # Message upon successful connection to the server
-                        print("Connection to the File Exchange Server is successful!\n")
-
-                        # For receiving upcoming messages
-                        threading.Thread(target=receiveMessage, args=(clientSocket,), daemon=True).start()
-                    
-                    # Message upon unsuccessful connection to the server due to the server not running or incorrect IP and Port combination
-                    except Exception:
-                        print("Error: Connection to the Server has failed! Please check IP Address and Port Number.")
-            
-            # Leave Server
             elif inputSyntax == "/leave":
-                
-                # Disconnect to the server application.
-                if connected:
-                    clientSocket.close()
-                    # Reset the handle and set connection as False
-                    connected = False
-                    handle = None
-
-                    # Message upon successful disconnection to the server
-                    print("Connection closed. Thank you!")
-                
-                # Message upon unsuccessful disconnection to the server due to not currently being connected
-                else:
-                    print("Error: Disconnection failed. Please connect to the server first.")
+                leaveServer()
 
 # Executable
 main()
