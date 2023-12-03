@@ -15,7 +15,7 @@ file_list = []
 # Preparing the Server Socket
 serverSocket = socket(AF_INET,SOCK_STREAM)
 serverSocket.bind(('',serverPort))
-serverSocket.listen(1)
+serverSocket.listen(3)
 
 # To deal with a Client
 def manageClient(connectionSocket, addr):
