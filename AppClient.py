@@ -1,4 +1,5 @@
 from socket import *
+import os                  # for file size
 import re                  # for regex
 import threading
 import time                # used to add slight delay after functions (to improve flow)
@@ -29,7 +30,7 @@ def intro():
 def userInput():
     # If Client is not yet registered
     if not handle:
-        return input("\n<Unregisted>: ")
+        return input("\n<Unregistered>: ")
     # If registered
     else:
         return input("\n"+handle+": ")
@@ -55,7 +56,7 @@ def doesParamMatch(inputSyntax):
             match = re.match(command, inputSyntax)
             if match:
                 return True
-    print("Error: Commmand paramters do not match or is not allowed.")
+    print("Error: Command parameters do not match or is not allowed.")
     return False
 
 # /?: Request command help to output all Input Syntax commands for references
@@ -158,6 +159,98 @@ def register(newHandle):
     except Exception:
         print("Error: Registration failed.")
 
+# /store <filename>: Send file to server
+def storeFile(filename):
+    # Global to ensure they retain/update overall value
+    global clientSocket
+
+    try:
+        # Send "/store" to Server
+        clientSocket.send("/store".encode())
+
+        # Send the filename input to Server
+        clientSocket.send(filename.encode())
+
+        # Check if the file exists
+        if not os.path.exists(filename):
+            print("Error: File not found.")
+        else:
+            # Send the file size
+            filesize = os.path.getsize(filename)
+            clientSocket.send(str(filesize).encode())
+
+            # Read and send the file to Server in chunks
+            with open(filename, "rb") as file:
+                while True:
+                    file_data = file.read(1024)
+                    if not file_data:
+                        break
+                    clientSocket.send(file_data)
+
+            # Prints Server's comment on the file transfer
+            print(clientSocket.recv(1024).decode())
+    
+    except Exception as e:
+        print(f"Error: {e}")
+
+# /dir: Request directory file list from the Server
+def requestDir():
+    # Global to ensure they retain/update overall value
+    global clientSocket
+
+    try:
+        # Send "/dir" to Server
+        clientSocket.send("/dir".encode())
+
+        # Receive and print the list of files from the Server
+        file_list = eval(clientSocket.recv(1024).decode())
+        
+        if not file_list:
+            print("Server Directory is empty.")
+        else:
+            print("Server Directory")
+            for file in file_list:
+                print(file)
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+# /get <filename>: Fetch a file from the Server
+def getFile(filename):
+    # Global to ensure they retain/update overall value
+    global clientSocket
+
+    try:
+        # Send "/get" to Server
+        clientSocket.send("/get".encode())
+        # Send the filename to Server
+        clientSocket.send(filename.encode())
+
+        # Receive the server's response
+        response = clientSocket.recv(1024).decode()
+
+        if response.startswith("Error"):
+            print(response)
+            return
+        else:
+            # Receive the file size from Server
+            filesize = int(response)
+
+            # Receive and save the file from Server
+            with open(filename, 'wb') as file:
+                totalRecv = 0
+                while totalRecv < filesize:
+                    data = clientSocket.recv(1024)
+                    totalRecv += len(data)
+                    file.write(data)
+
+            # Prints Server's comment on the file transfer (excluding "OK" response)
+            print(clientSocket.recv(1024).decode())
+
+    except Exception as e:
+        print(f"Error: {e}")
+
+      
 # Receiving messages 
 def receiveMessage(clientSocket):
     try:
@@ -201,7 +294,26 @@ def main():
                 elif connected and handle:
                     print("Error: User is already registered.")  
                 else:
-                    print("Error: User must be connected to the server.")                    
+                    print("Error: User must be connected to the server.")
+
+            elif inputs[0] == "/store":
+                if connected and handle:
+                    storeFile(inputs[1])
+                elif connected and not handle:
+                    print("Error: User must be registered.")
+                else:
+                    print("Error: User must be connected to the server.")
+
+            elif inputSyntax == "/dir":
+                requestDir()       
+
+            elif inputs[0] == "/get":
+                if connected and handle:
+                    getFile(inputs[1])
+                elif connected and not handle:
+                    print("Error: User must be registered.")
+                else:
+                    print("Error: User must be connected to the server.")        
 
 # Executable
 main()
