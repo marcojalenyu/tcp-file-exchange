@@ -305,7 +305,12 @@ def main():
                     print("Error: User must be connected to the server.")
 
             elif inputSyntax == "/dir":
-                requestDir()       
+                if connected and handle:
+                    requestDir()
+                elif connected and not handle:
+                    print("Error: User must be registered.")
+                else:
+                    print("Error: User must be connected to the server.")   
 
             elif inputs[0] == "/get":
                 if connected and handle:

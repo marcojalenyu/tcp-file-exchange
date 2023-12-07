@@ -15,7 +15,7 @@ file_list = []
 # Preparing the Server Socket
 serverSocket = socket(AF_INET,SOCK_STREAM)
 serverSocket.bind(('',serverPort))
-serverSocket.listen(3)
+serverSocket.listen(5)
 
 # To deal with a Client
 def manageClient(connectionSocket, addr):
@@ -118,11 +118,15 @@ def manageClient(connectionSocket, addr):
         print("Device from port number " + str(addr[1]) + " disconnected from the server.\n")
         connectionSocket.close()
 
-while True:
-    # Establishing the connection
-    print('The server is ready to receive.\n')
-    connectionSocket, addr = serverSocket.accept()
-    thread = threading.Thread(target=manageClient, args=(connectionSocket, addr))
-    thread.start()
-    thread.join()
+# Function to handle each client connection
+def start_server():
+    while True:
+        # Establishing the connection
+        print('The server is ready to receive.\n')
+        connectionSocket, addr = serverSocket.accept()
+        thread = threading.Thread(target=manageClient, args=(connectionSocket, addr))
+        thread.start()
+
+# Start the server
+start_server()
 
