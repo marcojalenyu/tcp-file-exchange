@@ -10,13 +10,15 @@ connected = False          # checks whether Client is connected to Server
 clientSocket = None        # refers to the socket that connects the Client to the Server
 
 # List of commands
-commands = ["/join", "/leave", "/register", "/store", "/dir", "/get", "/?"]
+commands = ["/join", "/leave", "/register", "/store", "/dir", "/get", "/?", "/send", "/broadcast"]
 
 # List of commands with paramters
 paramCommands = [re.compile(r'^/join\s+((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost)\s+(\d+)$'),
                  re.compile(r'^/register\s+(\S+)$'),
                  re.compile(r'^/store\s+(\S+)$'),
-                 re.compile(r'^/get\s+(\S+)$')]
+                 re.compile(r'^/get\s+(\S+)$'),
+                 re.compile(r'^/send\s+(\S+)\s+(.+)$'),
+                 re.compile(r'^/broadcast\s+(.+)$')]
 
 # Opening display function
 def intro():
@@ -86,6 +88,14 @@ def displayCommands():
     print("Syntax: /get <filename>")
     print("Sample: /get Hello.txt")
     print("------------------------------------")
+    print("Send a message to a specific user:")
+    print("Syntax: /send <handle> <message>")
+    print("Sample: /send User1 Hello")
+    print("------------------------------------")
+    print("Send a message to all users:")
+    print("Syntax: /broadcast <message>")
+    print("Sample: /broadcast Hello")
+    print("------------------------------------")
     print("Request command help to output all Input Syntax commands for references:")
     print("Syntax: /?")
     print("------------------------------------")
@@ -103,6 +113,11 @@ def joinServer(inputs):
     
     # Connect to the server application
     try:
+        # Get the server IP and port number
+        serverName = inputs[1]
+        serverPort = int(inputs[2])
+        clientSocket = socket(AF_INET, SOCK_STREAM)
+        # Connect to the server
         clientSocket.connect((serverName, serverPort))
         connected = True
         # Uses threading to allow for concurrent functions
@@ -250,7 +265,28 @@ def getFile(filename):
     except Exception as e:
         print(f"Error: {e}")
 
-      
+# /send <handle> <message>: Send a message to a specific user
+def sendMessage(handle, message):
+    # Global to ensure they retain/update overall value
+    global clientSocket
+
+    try:
+        # Send "/send" to Server
+        clientSocket.send("/send".encode())
+        # Send the handle to Server
+        clientSocket.send(handle.encode())
+        validHandle = clientSocket.recv(1024).decode()
+
+        if validHandle == "True":
+            # Send the message to Server
+            clientSocket.send(message.encode())
+
+        # Prints Server's comment on the message transfer
+        print(clientSocket.recv(1024).decode())
+
+    except Exception as e:
+        print(f"Error: {e}")
+
 # Receiving messages 
 def receiveMessage(clientSocket):
     try:
@@ -318,7 +354,19 @@ def main():
                 elif connected and not handle:
                     print("Error: User must be registered.")
                 else:
-                    print("Error: User must be connected to the server.")        
+                    print("Error: User must be connected to the server.")
+
+            elif inputs[0] == "/send":
+                if connected and handle:
+                    # Extract the recipient's name and message from the command
+                    recipient = inputs[1]
+                    message = " ".join(inputs[2:])
+
+                    sendMessage(recipient, message)
+                elif connected and not handle:
+                    print("Error: User must be registered.")
+                else:
+                    print("Error: User must be connected to the server.")          
 
 # Executable
 main()

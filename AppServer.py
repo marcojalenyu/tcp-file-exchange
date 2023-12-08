@@ -126,6 +126,32 @@ def manageClient(connectionSocket, addr):
                 except Exception as e:
                     print(f"Error: {e}")
 
+            # If the Client sends a message to another Client
+            elif command == "/send":
+                # Receive the handle of the recipient
+                recipient = connectionSocket.recv(1024).decode()
+
+                try:
+                    # Check if the recipient is registered
+                    if recipient not in clients:
+                        connectionSocket.send("False".encode())
+
+                        connectionSocket.send("Error: Recipient not found.".encode())
+
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " failed to send a message to " + recipient + " as the recipient was not found.\n")
+                    else:
+                        connectionSocket.send("True".encode())
+                        message = connectionSocket.recv(1024).decode()
+                        # Send the message to the recipient
+                        clients[recipient]['socket'].send((handle + ": " + message).encode())
+                        connectionSocket.send(("Message sent to " + recipient + ".").encode())
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " sent a message to " + recipient + ".\n")
+
+                except Exception as e:
+                    print(f"Error: {e}")
+
     except Exception as e:
         print(f"Error: {e}")
 
