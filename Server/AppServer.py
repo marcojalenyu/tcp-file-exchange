@@ -42,7 +42,7 @@ def manageClient(connectionSocket, addr):
 
                 if handle not in clients:
                     clients[handle] = {'socket': connectionSocket, 'address': addr}
-                    connectionSocket.send(("Welcome "+handle+"!").encode())
+                    connectionSocket.send(("Welcome "+handle+"!\n").encode())
                     print("Device from port number " + str(addr[1]) + " registered as "+handle+".\n")
                 else:
                     connectionSocket.send("Error: Registration failed. Handle or alias already exists.".encode())
@@ -64,6 +64,7 @@ def manageClient(connectionSocket, addr):
 
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
                         connectionSocket.send((handle + "<" + timestamp + ">: Uploaded " + filename).encode())
+                        print("Device from port number " + str(addr[1]) + " uploaded " + filename + ".\n")
 
                         # Add the file to the list of files in the server's working directory
                         file_list.append(filename)
@@ -73,6 +74,7 @@ def manageClient(connectionSocket, addr):
            # If the Client requests directory file list from the Server
             elif command == "/dir":
                 try:
+                    print("Device from port number " + str(addr[1]) + " requested for the list of files in the server.\n")
                     # Send the list of files to the client
                     if file_list:
                         connectionSocket.send(str(file_list).encode())
@@ -92,19 +94,16 @@ def manageClient(connectionSocket, addr):
                     if filename not in file_list:
                         connectionSocket.send("Error: File not found in the server.".encode())
                     else:
-                        # Send the file size to the client
-                        filesize = os.path.getsize(filename)
-                        connectionSocket.send(str(filesize).encode())
-
                         # Read and send the file to the client in chunks
                         with open(filename, 'rb') as file:
-                            while True:
-                                file_data = file.read(1024)
-                                if not file_data:
-                                    break
-                                connectionSocket.send(file_data)
+                            file_bytes = file.read()
+                            file_size = len(file_bytes)
+
+                            connectionSocket.send(struct.pack("!Q", file_size))
+                            connectionSocket.sendall(file_bytes)
 
                         connectionSocket.send(f"File received from Server: {filename}".encode())
+                        print("Device from port number " + str(addr[1]) + " downloaded " + filename + ".\n")
 
                 except Exception as e:
                     print(f"Error: {e}")

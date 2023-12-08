@@ -310,30 +310,25 @@ def getFile(filename, gui):
 
     try:
         # Send "/get" to Server
+        print(1)
         clientSocket.send("/get".encode())
         # Send the filename to Server
+        print(2)
         clientSocket.send(filename.encode())
+        
+        # Receive the file size from Server
+        print(3)
+        filesize = struct.unpack("!Q", clientSocket.recv(8))[0]
+        data = clientSocket.recv(filesize)
 
-        # Receive the server's response
-        response = clientSocket.recv(1024).decode()
+        # Receive and save the file from Server
+        print(4)
+        with open(filename, 'wb') as file:
+            file.write(data)
 
-        if response.startswith("Error"):
-            gui.display_message(response+"\n", is_user_message=False)
-            return
-        else:
-            # Receive the file size from Server
-            filesize = int(response)
-
-            # Receive and save the file from Server
-            with open(filename, 'wb') as file:
-                totalRecv = 0
-                while totalRecv < filesize:
-                    data = clientSocket.recv(1024)
-                    totalRecv += len(data)
-                    file.write(data)
-
-            # Prints Server's comment on the file transfer (excluding "OK" response)
-            gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
+        print(5)
+        # Prints Server's comment on the file transfer (excluding "OK" response)
+        gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
 
     except Exception as e:
         gui.display_message(f"Error: {e}\n", is_user_message=False)
