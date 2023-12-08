@@ -228,7 +228,7 @@ def leaveServer(gui):
 # /register <handle>: Register a unique handle or alias
 def register(newHandle, gui):
     # Global to ensure they retain/update overall value
-    global handle
+    global handle, folder
 
     try:
         # Send "/register" to Server
@@ -245,6 +245,11 @@ def register(newHandle, gui):
             handle = newHandle
             gui.update_user_label(handle)
 
+            # Create a user's directory
+            user_dir = os.path.dirname(os.path.abspath(__file__))
+            folder = os.path.join(user_dir, handle)
+            os.makedirs(folder, exist_ok=True)
+
         # Prints Server's comment on the registration
         gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
         
@@ -254,7 +259,7 @@ def register(newHandle, gui):
 # /store <filename>: Send file to server
 def storeFile(filename, gui):
     # Global to ensure they retain/update overall value
-    global clientSocket
+    global clientSocket, handle, folder
 
     try:
         # Send "/store" to Server
@@ -264,11 +269,13 @@ def storeFile(filename, gui):
         clientSocket.send(filename.encode())
 
         # Check if the file exists
-        if not os.path.exists(filename):
+        file_path = os.path.join(folder, filename)
+
+        if not os.path.exists(file_path):
             gui.display_message("Error: File not found.\n", is_user_message=False)
         else:
             # Read and send the file to Server in chunks
-            with open(filename, 'rb') as file:
+            with open(file_path, 'rb') as file:
                 file_bytes = file.read()
                 file_size = len(file_bytes)
 

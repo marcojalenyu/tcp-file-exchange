@@ -11,7 +11,9 @@ serverPort = 12345
 clients = {}
 
 # Stores the files in the server's working directory
-file_list = []
+folder_name = "Files"
+folder_path = os.path.join(os.getcwd(), folder_name)
+os.makedirs(folder_path, exist_ok=True)
 
 # Preparing the Server Socket
 serverSocket = socket(AF_INET,SOCK_STREAM)
@@ -59,7 +61,8 @@ def manageClient(connectionSocket, addr):
                         data = connectionSocket.recv(filesize)
 
                         # Create a new file
-                        with open(filename, 'wb') as f:
+                        file_path = os.path.join(folder_path, filename)
+                        with open(file_path, 'wb') as f:
                             f.write(data)
 
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
@@ -75,8 +78,10 @@ def manageClient(connectionSocket, addr):
             elif command == "/dir":
                 try:
                     print("Device from port number " + str(addr[1]) + " requested for the list of files in the server.\n")
+                    
                     # Send the list of files to the client
-                    if file_list:
+                    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                        file_list = os.listdir(folder_path)
                         connectionSocket.send(str(file_list).encode())
                     else:
                         connectionSocket.send("[]".encode())  # Send an empty list as a string
