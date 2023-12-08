@@ -55,6 +55,8 @@ def manageClient(connectionSocket, addr):
                 try:
                     filename = connectionSocket.recv(1024).decode()
 
+                    print("Device from port number " + str(addr[1]) + " requested to upload " + filename + ".\n")
+
                     # Check if the file exists
                     if os.path.exists(filename):
                         filesize = struct.unpack("!Q", connectionSocket.recv(8))[0]
