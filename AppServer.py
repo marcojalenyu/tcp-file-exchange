@@ -56,20 +56,11 @@ def manageClient(connectionSocket, addr):
                     # Check if the file exists
                     if os.path.exists(filename):
                         filesize = struct.unpack("!Q", connectionSocket.recv(8))[0]
+                        data = connectionSocket.recv(filesize)
 
                         # Create a new file
                         with open(filename, 'wb') as f:
-                            totalRecv = 0
-                            buffer = 4096
-                            print(1)
-                            while totalRecv < filesize:
-                                data = connectionSocket.recv(min(buffer, filesize - totalRecv))
-                                totalRecv += len(data)
-                                f.write(data)
-                                buffer = min(2 * buffer, filesize - totalRecv)
-                                print(2)
-                                # percent_done = (totalRecv / float(filesize)) * 100
-                                # print("{0:.2f}% Done".format(percent_done))
+                            f.write(data)
 
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
                         connectionSocket.send((handle + "<" + timestamp + ">: Uploaded " + filename).encode())

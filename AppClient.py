@@ -267,19 +267,13 @@ def storeFile(filename, gui):
         if not os.path.exists(filename):
             gui.display_message("Error: File not found.\n", is_user_message=False)
         else:
-            # Send the file size
-            filesize = os.path.getsize(filename)
-            clientSocket.send(struct.pack("!Q", filesize))
-            buffer = 4096
-
             # Read and send the file to Server in chunks
             with open(filename, 'rb') as file:
-                while True:
-                    file_data = file.read(buffer)
-                    if not file_data:
-                        break
-                    clientSocket.sendall(file_data)
-                    buffer = min(2 * buffer, filesize - file.tell())
+                file_bytes = file.read()
+                file_size = len(file_bytes)
+
+                clientSocket.send(struct.pack("!Q", file_size))
+                clientSocket.sendall(file_bytes)
 
             # Prints Server's comment on the file transfer
             gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
