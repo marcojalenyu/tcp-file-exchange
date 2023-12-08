@@ -97,13 +97,18 @@ def manageClient(connectionSocket, addr):
                 # Receive the filename from the client
                 filename = connectionSocket.recv(1024).decode()
 
+                # Get the file path in the server
+                server_path = os.path.join(folder_path, filename)
+
+                print(server_path)
+
                 try:
                     # Check if the file exists in the server
-                    if filename not in file_list:
+                    if not os.path.exists(server_path):
                         connectionSocket.send("Error: File not found in the server.".encode())
                     else:
                         # Read and send the file to the client in chunks
-                        with open(filename, 'rb') as file:
+                        with open(server_path, 'rb') as file:
                             file_bytes = file.read()
                             file_size = len(file_bytes)
 

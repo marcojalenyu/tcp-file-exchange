@@ -326,6 +326,7 @@ def getFile(filename, gui):
         # Send "/get" to Server
         print(1)
         clientSocket.send("/get".encode())
+
         # Send the filename to Server
         print(2)
         clientSocket.send(filename.encode())
@@ -335,9 +336,12 @@ def getFile(filename, gui):
         filesize = struct.unpack("!Q", clientSocket.recv(8))[0]
         data = clientSocket.recv(filesize)
 
+        # Get the file path
+        file_path = os.path.join(handle, filename)
+
         # Receive and save the file from Server
         print(4)
-        with open(filename, 'wb') as file:
+        with open(file_path, 'wb') as file:
             file.write(data)
 
         print(5)
