@@ -69,6 +69,12 @@ def manageClient(connectionSocket, addr):
 
                         # Add the file to the list of files in the server's working directory
                         file_list.append(filename)
+
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " uploaded " + filename + ".\n")
+                    else:
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " failed to upload " + filename + " as the file was not found.\n")
                 except Exception as e:
                     print(f"Error: {e}")
 
@@ -80,6 +86,9 @@ def manageClient(connectionSocket, addr):
                         connectionSocket.send(str(file_list).encode())
                     else:
                         connectionSocket.send("[]".encode())  # Send an empty list as a string
+
+                    # Print on the server side
+                    print("Device from port number " + str(addr[1]) + " requested the list of files in the server's working directory.\n")
 
                 except Exception as e:
                     print(f"Error: {e}")
@@ -93,6 +102,9 @@ def manageClient(connectionSocket, addr):
                     # Check if the file exists in the server
                     if filename not in file_list:
                         connectionSocket.send("Error: File not found in the server.".encode())
+
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " requested " + filename + " from the server but the file was not found.\n")
                     else:
                         # Send the file size to the client
                         filesize = os.path.getsize(filename)
@@ -107,6 +119,9 @@ def manageClient(connectionSocket, addr):
                                 connectionSocket.send(file_data)
 
                         connectionSocket.send(f"File received from Server: {filename}".encode())
+
+                        # Print on the server side
+                        print("Device from port number " + str(addr[1]) + " requested " + filename + " from the server.\n")
 
                 except Exception as e:
                     print(f"Error: {e}")
