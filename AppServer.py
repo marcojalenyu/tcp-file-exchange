@@ -1,6 +1,7 @@
 from socket import *
 import os
 import threading
+import struct
 from datetime import datetime
 
 # Server Port Number
@@ -54,15 +55,21 @@ def manageClient(connectionSocket, addr):
 
                     # Check if the file exists
                     if os.path.exists(filename):
-                        filesize = int(connectionSocket.recv(1024).decode())
+                        filesize = struct.unpack("!Q", connectionSocket.recv(8))[0]
+
                         # Create a new file
                         with open(filename, 'wb') as f:
                             totalRecv = 0
+                            buffer = 4096
+                            print(1)
                             while totalRecv < filesize:
-                                data = connectionSocket.recv(1024)
+                                data = connectionSocket.recv(min(buffer, filesize - totalRecv))
                                 totalRecv += len(data)
                                 f.write(data)
-                                print("{0:.2f}".format((totalRecv/float(filesize))*100)+"% Done")
+                                buffer = min(2 * buffer, filesize - totalRecv)
+                                print(2)
+                                # percent_done = (totalRecv / float(filesize)) * 100
+                                # print("{0:.2f}% Done".format(percent_done))
 
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
                         connectionSocket.send((handle + "<" + timestamp + ">: Uploaded " + filename).encode())
