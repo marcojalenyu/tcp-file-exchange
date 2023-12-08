@@ -53,18 +53,19 @@ def manageClient(connectionSocket, addr):
             # If the Client sends a file to the Server
             elif command == "/store":
                 try:
-                    filename = connectionSocket.recv(1024).decode()
+                    file_path = connectionSocket.recv(1024).decode()
+                    filename = os.path.basename(file_path)
 
                     print("Device from port number " + str(addr[1]) + " requested to upload " + filename + ".\n")
 
                     # Check if the file exists
-                    if os.path.exists(filename):
+                    if os.path.exists(file_path):
                         filesize = struct.unpack("!Q", connectionSocket.recv(8))[0]
                         data = connectionSocket.recv(filesize)
 
                         # Create a new file
-                        file_path = os.path.join(folder_path, filename)
-                        with open(file_path, 'wb') as f:
+                        server_path = os.path.join(folder_path, filename)
+                        with open(server_path, 'wb') as f:
                             f.write(data)
 
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
