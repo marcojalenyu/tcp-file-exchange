@@ -276,18 +276,12 @@ def storeFile(filename, gui):
             gui.display_message("Error: File not found.\n", is_user_message=False)
         else:
             # Read and send the file to Server in chunks
-            print("Sending file...")
             with open(file_path, 'rb') as file:
-                print("File opened.")
                 file_bytes = file.read()
-                print("File read.")
                 file_size = len(file_bytes)
-                print("File size:", file_size)
 
                 clientSocket.send(struct.pack("!Q", file_size))
-                print("File size sent.")
                 clientSocket.sendall(file_bytes)
-                print("File sent.")
 
             # Prints Server's comment on the file transfer
             gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
@@ -324,15 +318,12 @@ def getFile(filename, gui):
 
     try:
         # Send "/get" to Server
-        print(1)
         clientSocket.send("/get".encode())
 
         # Send the filename to Server
-        print(2)
         clientSocket.send(filename.encode())
         
         # Receive the file size from Server
-        print(3)
         filesize = struct.unpack("!Q", clientSocket.recv(8))[0]
         data = clientSocket.recv(filesize)
 
@@ -340,11 +331,9 @@ def getFile(filename, gui):
         file_path = os.path.join(handle, filename)
 
         # Receive and save the file from Server
-        print(4)
         with open(file_path, 'wb') as file:
             file.write(data)
 
-        print(5)
         # Prints Server's comment on the file transfer (excluding "OK" response)
         gui.display_message(clientSocket.recv(1024).decode(), is_user_message=False)
 

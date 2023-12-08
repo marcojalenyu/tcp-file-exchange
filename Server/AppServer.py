@@ -71,9 +71,6 @@ def manageClient(connectionSocket, addr):
                         timestamp = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
                         connectionSocket.send((handle + "<" + timestamp + ">: Uploaded " + filename).encode())
                         print("Device from port number " + str(addr[1]) + " uploaded " + filename + ".\n")
-
-                        # Add the file to the list of files in the server's working directory
-                        file_list.append(filename)
                 except Exception as e:
                     print(f"Error: {e}")
 
@@ -99,9 +96,7 @@ def manageClient(connectionSocket, addr):
 
                 # Get the file path in the server
                 server_path = os.path.join(folder_path, filename)
-
-                print(server_path)
-
+                
                 try:
                     # Check if the file exists in the server
                     if not os.path.exists(server_path):
