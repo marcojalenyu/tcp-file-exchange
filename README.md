@@ -1,2 +1,2 @@
-# csnetwk-mp
- A File Exchange System
+#  A File Exchange System
+A basic TCP=IP messaging system.
