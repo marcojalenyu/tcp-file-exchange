@@ -1,2 +1,5 @@
-#  A File and Message Exchange System
-A basic TCP-IP messaging system application.
+# csnetwk-mp
+ A File Exchange System
+ CSNETWK - S17 Group 1:
+ Teves, Hannah
+ Yu, Marco
